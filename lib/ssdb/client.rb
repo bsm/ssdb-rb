@@ -54,7 +54,7 @@ class SSDB
     end
 
     # Performs multiple commands
-    # @param [Array<Hash>] array of command options
+    # @param [Array<Hash>] commands array of command options
     # @see SSDB::Client#call for command format
     def perform(commands)
       message = ""
