@@ -1,6 +1,6 @@
 # ssdb-rb
 
-[![Build Status](https://secure.travis-ci.org/bsm/ssdb-rb.png)](http://travis-ci.org/bsm/ssdb-rb)
+[![Build Status](https://travis-ci.org/bsm/ssdb-rb.png)](https://travis-ci.org/bsm/ssdb-rb)
 [![Dependency Status](https://gemnasium.com/bsm/ssdb-rb.png)](https://gemnasium.com/bsm/ssdb-rb)
 [![Coverage Status](https://coveralls.io/repos/bsm/ssdb-rb/badge.png)](https://coveralls.io/r/bsm/ssdb-rb)
 
