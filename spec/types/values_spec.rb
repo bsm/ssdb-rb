@@ -85,6 +85,11 @@ describe SSDB do
         should == ["x", nil, "z", "y"]
     end
 
+    it 'should multi-get mapped' do
+      subject.mapped_multi_get(["#{FPX}:key1", "#{FPX}:key2", "#{FPX}:key4", "#{FPX}:key6"]).
+        should == {"#{FPX}:key1" => "1", "#{FPX}:key2" => "2", "#{FPX}:key4" => "d"}
+    end
+
     it 'should check existence of multiple keys' do
       subject.multi_exists(["#{FPX}:key2", "#{FPX}:key3"]).should == [true, true]
       subject.multi_exists(["#{FPX}:key2", "#{FPX}:key9", "#{FPX}:key3"]).should == [true, false, true]

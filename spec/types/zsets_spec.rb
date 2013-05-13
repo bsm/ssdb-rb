@@ -106,6 +106,10 @@ describe SSDB do
       subject.multi_zget("#{FPX}:zset9", ["x", "y"]).should == [0, 0]
     end
 
+    it "should get multiple member/score pairs" do
+      subject.mapped_multi_zget("#{FPX}:zset1", ["a", "d", "x"]).should == { "a" => 1, "d" => 3 }
+    end
+
     it "should delete multiple members" do
       -> {
         subject.multi_zdel("#{FPX}:zset1", ["a", "d", "x"]).should == 2

@@ -3,23 +3,6 @@ require "monitor"
 class SSDB
   include MonitorMixin
 
-  Error           = Class.new(RuntimeError)
-  ConnectionError = Class.new(Error)
-  TimeoutError    = Class.new(Error)
-  CommandError    = Class.new(Error)
-  FutureNotReady  = Class.new(Error)
-
-  T_BOOL   = ->r { r == "1" }
-  T_INT    = ->r { r.to_i }
-  T_CINT   = ->r { r.to_i if r }
-  T_VBOOL  = ->r { r.each_slice(2).map {|_, v| v == "1" }}
-  T_VINT   = ->r { r.each_slice(2).map {|_, v| v.to_i }}
-  T_STRSTR = ->r { r.each_slice(2).to_a }
-  T_STRINT = ->r { r.each_slice(2).map {|v, s| [v, s.to_i] } }
-  T_MAPINT = ->r,n { h = {}; r.each_slice(2) {|k, v| h[k] = v }; n.map {|k| h[k].to_i } }
-  T_MAPSTR = ->r,n { h = {}; r.each_slice(2) {|k, v| h[k] = v }; n.map {|k| h[k] } }
-  BLANK    = "".freeze
-
   # @attr_reader [SSDB::Client] the client
   attr_reader :client
 
@@ -41,7 +24,7 @@ class SSDB
 
   # Execute a batch operation
   #
-  # @example simple batch
+  # @example Simple batch
   #
   #   ssdb.batch do
   #     ssdb.set "foo", "5"
@@ -50,7 +33,7 @@ class SSDB
   #   end
   #   # => [true, "5", 6]
   #
-  # @example batch with futures
+  # @example Using futures
   #
   #   ssdb.batch do
   #     v = ssdb.set "foo", "5"
@@ -78,6 +61,9 @@ class SSDB
   #
   # @param [String] key the key
   # @return [String] the value
+  #
+  # @example
+  #   ssdb.get("foo") # => "val"
   def get(key)
     mon_synchronize do
       perform ["get", key]
@@ -88,6 +74,9 @@ class SSDB
   #
   # @param [String] key the key
   # @param [String] value the value
+  #
+  # @example
+  #   ssdb.set("foo", "val") # => true
   def set(key, value)
     mon_synchronize do
       perform ["set", key, value], proc: T_BOOL
@@ -98,6 +87,9 @@ class SSDB
   #
   # @param [String] key the key
   # @param [Integer] value the increment
+  #
+  # @example
+  #   ssdb.incr("foo") # => 1
   def incr(key, value = 1)
     mon_synchronize do
       perform ["incr", key, value], proc: T_INT
@@ -108,6 +100,9 @@ class SSDB
   #
   # @param [String] key the key
   # @param [Integer] value the decrement
+  #
+  # @example
+  #   ssdb.decr("foo") # => -1
   def decr(key, value = 1)
     mon_synchronize do
       perform ["decr", key, value], proc: T_INT
@@ -118,6 +113,9 @@ class SSDB
   #
   # @param [String] key the key
   # @return [Boolean] true if exists
+  #
+  # @example
+  #   ssdb.exists("foo") # => true
   def exists(key)
     mon_synchronize do
       perform ["exists", key], proc: T_BOOL
@@ -128,6 +126,9 @@ class SSDB
   # Delete `key`.
   #
   # @param [String] key the key
+  #
+  # @example
+  #   ssdb.del("foo") # => nil
   def del(key)
     mon_synchronize do
       perform ["del", key]
@@ -141,6 +142,9 @@ class SSDB
   # @param [Hash] opts options
   # @option opts [Integer] :limit limit results
   # @return [Array<String>] matching keys
+  #
+  # @example
+  #   ssdb.keys("a", "z", limit: 2) # => ["bar", "foo"]
   def keys(start, stop, opts = {})
     limit = opts[:limit] || -1
     mon_synchronize do
@@ -155,6 +159,10 @@ class SSDB
   # @param [Hash] opts options
   # @option opts [Integer] :limit limit results
   # @return [Array<Array<String,String>>] key/value pairs
+  #
+  # @example
+  #   ssdb.scan("a", "z", limit: 2)
+  #   # => [["bar", "val1"], ["foo", "val2"]]
   def scan(start, stop, opts = {})
     limit = opts[:limit] || -1
     mon_synchronize do
@@ -169,6 +177,10 @@ class SSDB
   # @param [Hash] opts options
   # @option opts [Integer] :limit limit results
   # @return [Array<Array<String,String>>] key/value pairs in reverse order
+  #
+  # @example
+  #   ssdb.rscan("z", "a", limit: 2)
+  #   # => [["foo", "val2"], ["bar", "val1"]]
   def rscan(start, stop, opts = {})
     limit = opts[:limit] || -1
     mon_synchronize do
@@ -179,6 +191,10 @@ class SSDB
   # Sets multiple keys
   #
   # @param [Hash] pairs key/value pairs
+  #
+  # @example
+  #   ssdb.multi_set("bar" => "val1", "foo" => "val2")
+  #   # => 4
   def multi_set(pairs)
     mon_synchronize do
       perform ["multi_set", *pairs.to_a].flatten, proc: T_INT
@@ -189,6 +205,10 @@ class SSDB
   #
   # @param [Array<String>] keys
   # @return [Array<String>] values
+  #
+  # @example
+  #   ssdb.multi_get(["bar", "foo"])
+  #   # => ["val1", "val2"]
   def multi_get(keys)
     keys = Array(keys) unless keys.is_a?(Array)
     mon_synchronize do
@@ -196,9 +216,28 @@ class SSDB
     end
   end
 
+  # Retrieves multiple keys
+  #
+  # @param [Array<String>] keys
+  # @return [Array<String>] values
+  #
+  # @example
+  #   ssdb.mapped_multi_get(["bar", "foo"])
+  #   # => {"bar" => "val1", "foo" => val2"}
+  def mapped_multi_get(keys)
+    keys = Array(keys) unless keys.is_a?(Array)
+    mon_synchronize do
+      perform ["multi_get", *keys], multi: true, proc: T_HASHSTR
+    end
+  end
+
   # Deletes multiple keys
   #
   # @param [Array<String>] keys
+  #
+  # @example
+  #   ssdb.multi_del(["bar", "foo"])
+  #   # => 2
   def multi_del(keys)
     keys = Array(keys) unless keys.is_a?(Array)
     mon_synchronize do
@@ -210,18 +249,27 @@ class SSDB
   #
   # @param [Array<String>] keys
   # @return [Array<Boolean>] results
+  #
+  # @example
+  #   ssdb.multi_exists(["bar", "foo", "baz"])
+  #   # => [true, true, false]
   def multi_exists(keys)
     keys = Array(keys) unless keys.is_a?(Array)
     mon_synchronize do
       perform ["multi_exists", *keys], multi: true, proc: T_VBOOL
     end
   end
+  alias_method :multi_exists?, :multi_exists
 
   # Returns the score of `member` at `key`.
   #
   # @param [String] key the key
   # @param [String] member the member
-  # @return [Float] the score
+  # @return [Integer] the score
+  #
+  # @example
+  #   ssdb.zget("visits", "u1")
+  #   # => 101
   def zget(key, member)
     mon_synchronize do
       perform ["zget", key, member], proc: T_CINT
@@ -232,7 +280,11 @@ class SSDB
   #
   # @param [String] key the key
   # @param [String] member the member
-  # @param [Numeric] score the score
+  # @param [Integer] score the score
+  #
+  # @example
+  #   ssdb.zset("visits", "u1", 202)
+  #   # => true
   def zset(key, member, score)
     mon_synchronize do
       perform ["zset", key, member, score], proc: T_BOOL
@@ -242,8 +294,12 @@ class SSDB
   # Redis 'compatibility'.
   #
   # @param [String] key the key
-  # @param [Numeric] score the score
+  # @param [Integer] score the score
   # @param [String] member the member
+  #
+  # @example
+  #   ssdb.zadd("visits", 202, "u1")
+  #   # => true
   def zadd(key, score, member)
     zset(key, member, score)
   end
@@ -253,6 +309,12 @@ class SSDB
   # @param [String] key the key
   # @param [String] member the member
   # @param [Integer] score the increment
+  #
+  # @example
+  #   ssdb.zincr("visits", "u1")
+  #   # => 102
+  #   ssdb.zincr("visits", "u1", 100)
+  #   # => 202
   def zincr(key, member, score = 1)
     mon_synchronize do
       perform ["zincr", key, member, score], proc: T_INT
@@ -264,6 +326,12 @@ class SSDB
   # @param [String] key the key
   # @param [String] member the member
   # @param [Integer] score the decrement
+  #
+  # @example
+  #   ssdb.zdecr("visits", "u1")
+  #   # => 100
+  #   ssdb.zdecr("visits", "u1", 5)
+  #   # => 95
   def zdecr(key, member, score = 1)
     mon_synchronize do
       perform ["zdecr", key, member, score], proc: T_INT
@@ -274,6 +342,10 @@ class SSDB
   #
   # @param [String] key the key
   # @return [Boolean] true if exists
+  #
+  # @example
+  #   ssdb.zexists("visits")
+  #   # => true
   def zexists(key)
     mon_synchronize do
       perform ["zexists", key], proc: T_BOOL
@@ -284,6 +356,10 @@ class SSDB
   # Returns the cardinality of a set `key`.
   #
   # @param [String] key the key
+  #
+  # @example
+  #   ssdb.zsize("visits")
+  #   # => 2
   def zsize(key)
     mon_synchronize do
       perform ["zsize", key], proc: T_INT
@@ -294,6 +370,10 @@ class SSDB
   #
   # @param [String] key the key
   # @param [String] member the member
+  #
+  # @example
+  #   ssdb.zdel("visits", "u1")
+  #   # => true
   def zdel(key, member)
     mon_synchronize do
       perform ["zdel", key, member], proc: T_BOOL
@@ -307,6 +387,10 @@ class SSDB
   # @param [Hash] opts options
   # @option opts [Integer] :limit limit results
   # @return [Array<String>] matching zset keys
+  #
+  # @example
+  #   ssdb.zlist("a", "z", limit: 2)
+  #   # => ["visits", "page_views"]
   def zlist(start, stop, opts = {})
     limit = opts[:limit] || -1
     mon_synchronize do
@@ -318,11 +402,15 @@ class SSDB
   # between `start` and `stop` scores.
   #
   # @param [String] key the zset
-  # @param [Float] start start at this score
-  # @param [Float] stop stop at this score
+  # @param [Integer] start start at this score
+  # @param [Integer] stop stop at this score
   # @param [Hash] opts options
   # @option opts [Integer] :limit limit results
   # @return [Array<String>] matching members
+  #
+  # @example
+  #   ssdb.zkeys("visits", 0, 300, limit: 2)
+  #   # => ["u1", "u2"]
   def zkeys(key, start, stop, opts = {})
     limit = opts[:limit] || -1
     mon_synchronize do
@@ -334,11 +422,15 @@ class SSDB
   # between `start` and `stop` scores.
   #
   # @param [String] key the zset
-  # @param [Float] start start at this score
-  # @param [Float] stop stop at this score
+  # @param [Integer] start start at this score
+  # @param [Integer] stop stop at this score
   # @param [Hash] opts options
   # @option opts [Integer] :limit limit results
-  # @return [Array<Array<String,Float>>] member/score pairs
+  # @return [Array<Array<String,Integer>>] member/score pairs
+  #
+  # @example
+  #   ssdb.zscan("visits", 0, 300, limit: 2)
+  #   # => [["u1", 101], ["u2", 202]]
   def zscan(key, start, stop, opts = {})
     limit = opts[:limit] || -1
     mon_synchronize do
@@ -350,11 +442,15 @@ class SSDB
   # between `start` and `stop` scores.
   #
   # @param [String] key the zset
-  # @param [Float] start start at this score
-  # @param [Float] stop stop at this score
+  # @param [Integer] start start at this score
+  # @param [Integer] stop stop at this score
   # @param [Hash] opts options
   # @option opts [Integer] :limit limit results
-  # @return [Array<Array<String,Float>>] member/score pairs
+  # @return [Array<Array<String,Integer>>] member/score pairs
+  #
+  # @example
+  #   ssdb.zrscan("visits", 300, 0, limit: 2)
+  #   # => [["u2", 202], ["u1", 101]]
   def zrscan(key, start, stop, opts = {})
     limit = opts[:limit] || -1
     mon_synchronize do
@@ -366,17 +462,26 @@ class SSDB
   #
   # @param [Array<String>] keys
   # @return [Array<Boolean>] results
+  #
+  # @example
+  #   ssdb.multi_zexists("visits", "page_views", "baz")
+  #   # => [true, true, false]
   def multi_zexists(keys)
     keys = Array(keys) unless keys.is_a?(Array)
     mon_synchronize do
       perform ["multi_zexists", *keys], multi: true, proc: T_VBOOL
     end
   end
+  alias_method :multi_zexists?, :multi_zexists
 
   # Returns cardinalities of multiple sets
   #
   # @param [Array<String>] keys
   # @return [Array<Boolean>] results
+  #
+  # @example
+  #   ssdb.multi_zsize("visits", "page_views", "baz")
+  #   # => [2, 1, 0]
   def multi_zsize(keys)
     keys = Array(keys) unless keys.is_a?(Array)
     mon_synchronize do
@@ -387,7 +492,11 @@ class SSDB
   # Sets multiple members of `key`
   #
   # @param [String] key the zset
-  # @param [Hash] pairs key/value pairs
+  # @param [Hash<String,Integer>] pairs key/value pairs
+  #
+  # @example
+  #   ssdb.multi_zset("visits", "u1" => 102, "u3" => 303)
+  #   # => 2
   def multi_zset(key, pairs)
     mon_synchronize do
       perform ["multi_zset", key, *pairs.to_a].flatten, proc: T_INT
@@ -398,7 +507,11 @@ class SSDB
   #
   # @param [String] key the zset
   # @param [Array<String>] members
-  # @return [Array<Float>] scores
+  # @return [Array<Integer>] scores
+  #
+  # @example
+  #   ssdb.multi_zget("visits", ["u1", "u2"])
+  #   # => [101, 202]
   def multi_zget(key, members)
     members = Array(members) unless members.is_a?(Array)
     mon_synchronize do
@@ -406,10 +519,30 @@ class SSDB
     end
   end
 
+  # Retrieves multiple scores from `key`
+  #
+  # @param [String] key the zset
+  # @param [Array<String>] members
+  # @return [Hash<String,Integer>] members with scores
+  #
+  # @example
+  #   ssdb.mapped_multi_zget("visits", ["u1", "u2"])
+  #   # => {"u1" => 101, "u2" => 202}
+  def mapped_multi_zget(key, members)
+    members = Array(members) unless members.is_a?(Array)
+    mon_synchronize do
+      perform ["multi_zget", key, *members], multi: true, proc: T_HASHINT
+    end
+  end
+
   # Deletes multiple members from `key`
   #
   # @param [String] key the zset
   # @param [Array<String>] members
+  #
+  # @example
+  #   ssdb.multi_zdel("visits", ["u1", "u2"])
+  #   # => 2
   def multi_zdel(key, members)
     members = Array(members) unless members.is_a?(Array)
     mon_synchronize do
@@ -426,6 +559,6 @@ class SSDB
 
 end
 
-%w|version client batch future|.each do |name|
+%w|version errors constants client batch future|.each do |name|
   require "ssdb/#{name}"
 end
