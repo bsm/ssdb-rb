@@ -1,5 +1,9 @@
 # ssdb-rb
 
+[![Build Status](https://secure.travis-ci.org/bsm/ssdb-rb.png)](http://travis-ci.org/bsm/ssdb-rb)
+[![Dependency Status](https://gemnasium.com/bsm/ssdb-rb.png)](https://gemnasium.com/bsm/ssdb-rb)
+[![Coverage Status](https://coveralls.io/repos/bsm/ssdb-rb/badge.png)](https://coveralls.io/r/bsm/ssdb-rb)
+
 A Ruby client library for [SSDB][ssdb-home], heaviliy inspired by the great
 [redis-rb][redisrb-home] library. Requires SSDB version 1.4.2 or higher.
 
