@@ -16,7 +16,7 @@ before_install:
 # Start SSDB
 before_script:
   - cd ssdb
-  - ./ssdb-server ssdb.conf
+  - ./ssdb-server ssdb.conf -d
 
 # Gracefully stop SSDB
 after_script:
