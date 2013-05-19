@@ -72,7 +72,7 @@ describe SSDB do
 
     it "should scan scores" do
       subject.zscan("#{FPX}:zset1", 0, 10).should == [["a", 1], ["b", 2], ["c", 2], ["d", 3]]
-      subject.zscan("#{FPX}:zset1", 2, 3).should == [["b", 2], ["c", 2]]
+      subject.zscan("#{FPX}:zset1", 2, 3).should == [["b", 2], ["c", 2], ["d", 3]]
       subject.zscan("#{FPX}:zset1", 2, 3, limit: 2).should == [["b", 2], ["c", 2]]
       subject.zscan("#{FPX}:zset1", 3, 2).should == []
       subject.zscan("#{FPX}:zset3", 0, 10).should == [["za", 5], ["zz", 5]]

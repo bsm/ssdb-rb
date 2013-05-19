@@ -2,6 +2,10 @@ require 'spec_helper'
 
 describe SSDB::Client do
 
+  def perform(*cmds)
+    subject.perform cmds.map {|c| { cmd: c } }
+  end
+
   its(:url)       { should be_instance_of(URI::Generic) }
   its(:timeout)   { should == 10.0 }
   its(:id)        { should == "ssdb://127.0.0.1:8888/" }
@@ -23,16 +27,27 @@ describe SSDB::Client do
   end
 
   it "should perform commands" do
-    res = subject.perform [{ cmd: ["set", "#{FPX}:key", "VAL1"] }]
-    res.should == ["1"]
+    perform(
+      ["set", "#{FPX}:key", "VAL1"]
+    ).should == ["1"]
   end
 
   it "should perform commands in bulks" do
-    res = subject.perform [
-      { cmd: ["set", "#{FPX}:key", "VAL2"] },
-      { cmd: ["get", "#{FPX}:key"] }
-    ]
-    res.should == ["1", "VAL2"]
+    perform(
+      ["set", "#{FPX}:key", "VAL2"],
+      ["get", "#{FPX}:key"],
+    ).should == ["1", "VAL2"]
+  end
+
+  it "should parse responses" do
+    perform(
+      ["set", "#{FPX}:key", "\nabcd"],
+      ["get", "#{FPX}:key"],
+      ["set", "#{FPX}:key", "ab\ncd"],
+      ["get", "#{FPX}:key"],
+      ["set", "#{FPX}:key", "abcd\n"],
+      ["get", "#{FPX}:key"]
+    ).should == ["1", "\nabcd", "1", "ab\ncd", "1", "abcd\n"]
   end
 
   it "should perform complex command chains" do

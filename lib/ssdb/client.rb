@@ -137,7 +137,7 @@ class SSDB
 
       def read_len
         len = io(:gets).chomp
-        len unless len.empty?
+        len.to_i unless len.empty?
       end
 
       def read_part(multi)
@@ -147,7 +147,9 @@ class SSDB
         case status
         when OK
           part = []
-          part << io(:gets).chomp while read_len
+          while len = read_len
+            part << io(:read, len+1).chomp
+          end
           part.size > 1 || multi ? part : part[0]
         when NOT_FOUND
           multi ? [] : nil
