@@ -60,4 +60,28 @@ describe SSDB::Client do
     res.should == ["1", "1", ["VAL1", "1", "VAL2", "2"], ["VAL2", 2, "VAL1", "1"]]
   end
 
+  it "should handle missing results" do
+    perform(
+      ["get", "#{FPX}:key"],
+      ["set", "#{FPX}:key", "a"],
+      ["get", "#{FPX}:key"]
+    ).should == [nil, "1", "a"]
+  end
+
+  it "should handle client errors" do
+    perform(["set", "#{FPX}:key", "a"]).should == ["1"]
+    -> { perform(["invalid", "command"]) }.should raise_error(SSDB::CommandError, /client_error/)
+    perform(["get", "#{FPX}:key"]).should == ["a"]
+  end
+
+  it "should retry on connection errors" do
+    perform(["set", "#{FPX}:key", "a"]).should == ["1"]
+
+    sock = subject.send(:socket)
+    sock.should_receive(:gets).and_raise(Errno::EPIPE)
+
+    perform(["get", "#{FPX}:key"]).should == ["a"]
+    subject.send(:socket).should_not be(sock)
+  end
+
 end

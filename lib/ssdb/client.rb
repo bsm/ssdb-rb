@@ -152,10 +152,13 @@ class SSDB
           end
           part.size > 1 || multi ? part : part[0]
         when NOT_FOUND
+          io(:read, 1) # Skip empty line
           multi ? [] : nil
         else
+          io(:read, 1) # Skip empty line
           raise SSDB::CommandError, "Server responded with '#{status}'"
         end
+
       end
 
       # Parses `url`

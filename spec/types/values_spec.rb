@@ -46,12 +46,15 @@ describe SSDB do
     end
 
     it "should set/get values" do
+      subject.get("#{FPX}:key").should be_nil
       subject.set("#{FPX}:key", "a").should be(true)
-      subject.set("#{FPX}:key", "a").should be(true)
-      subject.set("#{FPX}:key", "b").should be(true)
+      subject.get("#{FPX}:key").should == "a"
 
+      subject.set("#{FPX}:key", "a").should be(true)
+      subject.get("#{FPX}:key").should == "a"
+
+      subject.set("#{FPX}:key", "b").should be(true)
       subject.get("#{FPX}:key").should == "b"
-      subject.get("#{FPX}:keyX").should be_nil
     end
 
     it "should increment/decrement values" do
