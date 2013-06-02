@@ -143,22 +143,25 @@ class SSDB
       def read_part(multi)
         read_len || return
         status = io(:gets).chomp
+        body   = read_body
 
         case status
         when OK
-          part = []
-          while len = read_len
-            part << io(:read, len+1).chomp
-          end
-          part.size > 1 || multi ? part : part[0]
+          body.size > 1 || multi ? body : body[0]
         when NOT_FOUND
-          io(:read, 1) # Skip empty line
           multi ? [] : nil
         else
-          io(:read, 1) # Skip empty line
-          raise SSDB::CommandError, "Server responded with '#{status}'"
+          raise SSDB::CommandError, "ERR #{status}: #{body.join(', ')}"
         end
+      end
 
+      # Read from socket until \n\n
+      def read_body
+        lines = []
+        while len = read_len
+          lines << io(:read, len+1).chomp
+        end
+        lines
       end
 
       # Parses `url`

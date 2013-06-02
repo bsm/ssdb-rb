@@ -57,6 +57,34 @@ class SSDB
     end
   end
 
+  # Returns info
+  # @return [Hash] info attributes
+  def info
+    mon_synchronize do
+      perform ["info"], proc: T_INFO
+    end
+  end
+
+  # Evaluates scripts
+  #
+  # @param [String] script
+  # @param [multiple<String>] args
+  # @return [Array] results
+  #
+  # @example
+  #   script =<<-LUA
+  #     local x = math.pi * 10
+  #     return x
+  #   LUA
+  #   ssdb.eval(script)
+  #   # => ["31.425926"]
+  #
+  def eval(script, *args)
+    mon_synchronize do
+      perform ["eval", script, *args]
+    end
+  end
+
   # Returns value at `key`.
   #
   # @param [String] key the key

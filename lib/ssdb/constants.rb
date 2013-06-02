@@ -12,4 +12,27 @@ class SSDB
   T_HASHINT = ->r { h = {}; r.each_slice(2) {|k, v| h[k] = v.to_i }; h }
   BLANK     = "".freeze
 
+  DB_STATS  = ["compactions", "level", "size", "time", "read", "written"].freeze
+  T_INFO    = ->rows {
+    res = {}
+    rows.shift # skip first
+    rows.each_slice(2) do |key, val|
+      res[key] = case key
+      when "leveldb.stats"
+        stats = {}
+        val.lines.to_a.last.strip.split(/\s+/).each_with_index do |v, i|
+          stats[DB_STATS[i]] = v.to_i
+        end
+        stats
+      when /^cmd\./
+        val.split("\t").inject({}) do |stats, i|
+          k, v = i.split(": ", 2)
+          stats.update k => v.to_i
+        end
+      else
+        val.to_i
+      end
+    end
+    res
+  }
 end
