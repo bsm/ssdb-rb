@@ -48,16 +48,26 @@ describe SSDB do
     res["leveldb.stats"].should have(6).keys
   end
 
-  it 'should eval scripts' do
-    subject.eval("return 'hello'").should == "hello"
-    subject.eval("return table.concat(args)", 1, "a", 2, "b").should == "1a2b"
-    subject.eval("local x = 10 * math.pi; return x").should == "31.415927"
-    subject.eval("return 2 ^ 3 == 8").should == "1"
-    subject.eval("local no_return").should be_nil
-    # TODO
-    # subject.eval("return {1, 'a', 2, 'b', ['c'] = 3}").should == ["1", "a", "2", "b", "c", "3"]
+  describe "scripting" do
 
-    -> { subject.eval "wrong syntax" }.should raise_error(SSDB::CommandError, /failed compiling/)
+    it 'should eval' do
+      subject.eval("return 'hello'").should == "hello"
+      subject.eval("return table.concat(args)", 1, "a", 2, "b").should == "1a2b"
+      subject.eval("local x = 10 * math.pi; return x").should == "31.415927"
+      subject.eval("return 2 ^ 3 == 8").should == "1"
+      subject.eval("local no_return").should be_nil
+      subject.eval("return {1, 'a', 2, 'b', ['c'] = 3, 'd'}").should == ["1", "a", "2", "b", "d"]
+    end
+
+    it 'should raise on eval failures' do
+      -> { subject.eval "wrong syntax" }.should raise_error(SSDB::CommandError, /failed compiling/)
+    end
+
+    it 'should have an ssdb accessor' do
+      subject.eval("return type(ssdb)").should == "userdata"
+      subject.eval("return ssdb:call('get', 'key')").should be_nil
+      -> { subject.eval "return ssdb:no_method()" }.should raise_error(SSDB::CommandError, /failed running/)
+    end
+
   end
-
 end
