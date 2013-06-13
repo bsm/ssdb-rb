@@ -94,6 +94,7 @@ w.value
 ### TODO
 
 * Implement HASH operations
+* Complete EVAL(SHA) support
 
 ### Licence (MIT)
 
