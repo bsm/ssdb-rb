@@ -8,7 +8,7 @@ gemfile:
 
 # Install & start SSDB
 before_install:
-  - git clone --depth 1 git://github.com/ideawu/ssdb.git
+  - git clone --depth 1 -b scripting git://github.com/dim/ssdb.git
   - cd ssdb
   - make
   - cd ..
