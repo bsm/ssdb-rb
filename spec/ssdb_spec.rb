@@ -45,7 +45,7 @@ describe SSDB do
     res["cmd.get"].keys.should =~ ["calls", "time_wait", "time_proc"]
 
     res["leveldb.stats"].should be_instance_of(Hash)
-    res["leveldb.stats"].should have(6).keys
+    res["leveldb.stats"].keys.should =~ ["compactions", "level", "read", "size", "time", "written"]
   end
 
   describe "scripting" do
