@@ -81,7 +81,7 @@ can be retrieved via the `#value` method once the batch execution is complete.
 ```ruby
 ssdb.batch do
   v = ssdb.set "foo", "bar"
-  w = ssdc.incr "baz"
+  w = ssdb.incr "baz"
 end
 
 v.value
